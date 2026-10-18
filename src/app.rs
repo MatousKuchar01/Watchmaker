@@ -41,20 +41,48 @@ impl App {
 
         Self {
             should_quit: false,
-            tools: vec![], //todo fill tools
+            tools: vec![
+                Tool::Tweezers,
+                Tool::CaseOpener,
+                Tool::HandPress,
+                Tool::Loupe,
+            ],
             tools_state,
-            log_messages: vec![], //todo fill messages
+            log_messages: vec![
+                "You stepped into the watch workshop.".to_string(),
+                "Use ARROWS to pick tool, ENTER to use, Q to quit.".to_string(),
+            ],
         }
     }
 
     /// Moves selection of a tool down one index
-    pub fn select_next_tool(&mut self) {}
+    pub fn select_next_tool(&mut self) {
+        if let Some(selection) = self.tools_state.selected() {
+            let next = (selection + 1) % self.tools.len();
+            self.tools_state.select(Some(next));
+        }
+    }
 
     /// Moves selection of a tool up one index
-    pub fn select_previous_tool(&mut self) {}
+    pub fn select_previous_tool(&mut self) {
+        if let Some(selection) = self.tools_state.selected() {
+            let previous = if selection == 0 {
+                self.tools.len() - 1
+            } else {
+                selection - 1
+            };
+
+            self.tools_state.select(Some(previous));
+        }
+    }
 
     /// Simulation of using the selected tool
-    pub fn use_selected_tool(&mut self) {}
+    pub fn use_selected_tool(&mut self) {
+        if let Some(selection) = self.tools_state.selected() {
+            let tool = self.tools[selection];
+            self.log_messages.push(format!("You used: {}", tool.name()));
+        }
+    }
 
     /// Quitting the game
     pub fn quit(&mut self) {
