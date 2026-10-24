@@ -24,18 +24,11 @@ pub fn render(frame: &mut Frame, app: &mut App) {
     ;
 
     // 1. Working bench
-    let workbench_text = vec![
-        "",
-        "          .---.          ",
-        "         /     \\         ",
-        "        |  (O)  |        <- (Seiko NH35)",
-        "         \\     /         ",
-        "          '---'          ",
-        "",
-        "  State: Closed",
-    ];
+    let ascii_art = app.current_watch.get_art_for_state(app.watch_state);
+    let status_line = format!("\n\n{}", app.watch_state.status_text());
+    let combined_display = format!("{}{}", ascii_art, status_line);
 
-    let workbench = Paragraph::new(workbench_text.join("\n"))
+    let workbench = Paragraph::new(combined_display)
         .block(Block::default().borders(Borders::ALL).title("Workbench"))
         .alignment(Alignment::Center)
     ;

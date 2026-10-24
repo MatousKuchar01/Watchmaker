@@ -1,4 +1,5 @@
 use ratatui::widgets::ListState;
+use crate::ascii::{models, WatchAscii};
 
 /// Available tools in workshop
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -21,6 +22,27 @@ impl Tool {
     }
 }
 
+/// State of watch disassembly
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum WatchState {
+    ClosedCase, // Sealed case back
+    OpenCase, // Case back unscrewed (movement visible)
+    MovementExtracted, // Movement sitting on the workbench pad
+    HandsRemoved, // Hands detached from the pinion
+}
+
+impl WatchState {
+    /// Helper text for UI
+    pub fn status_text(&self) -> &'static str {
+        match self {
+            WatchState::ClosedCase => "Case: Sealed (screw-down case back locked)",
+            WatchState::OpenCase => "Case: Open (Seiko NH35 movement visible)",
+            WatchState::MovementExtracted => "Status: Movement extracted onto workbench pad",
+            WatchState::HandsRemoved => "Status: Hands removed, bare dial exposed",
+        }
+    }
+}
+
 /// Main struct that hold state of the whole app
 pub struct App {
     /// Should app quit?
@@ -29,6 +51,10 @@ pub struct App {
     pub tools: Vec<Tool>,
     /// State of selection in TUI list
     pub tools_state: ListState,
+    /// State of watch
+    pub watch_state: WatchState,
+    /// Current watch
+    pub current_watch: &'static WatchAscii,
     /// History of log messages
     pub log_messages: Vec<String>,
 }
@@ -48,6 +74,8 @@ impl App {
                 Tool::Loupe,
             ],
             tools_state,
+            watch_state: WatchState::ClosedCase,
+            current_watch: &models::OREX_SUBAQUATIC,
             log_messages: vec![
                 "You stepped into the watch workshop.".to_string(),
                 "Use ARROWS to pick tool, ENTER to use, Q to quit.".to_string(),
@@ -80,7 +108,72 @@ impl App {
     pub fn use_selected_tool(&mut self) {
         if let Some(selection) = self.tools_state.selected() {
             let tool = self.tools[selection];
-            self.log_messages.push(format!("You used: {}", tool.name()));
+
+            match (self.watch_state, tool) {
+                // Step 1: Opening the case
+                (WatchState::ClosedCase, Tool::CaseOpener) => {
+                    self.watch_state = WatchState::OpenCase;
+                    self.log_messages.push(
+                        "SUCCESS: Case opener locked into notches and unscrewed the case back. NH35 movement exposed."
+                            .to_string(),
+                    );
+                }
+                (WatchState::ClosedCase, Tool::Tweezers) => {
+                    self.log_messages.push(
+                        "FAIL: Tweezers cannot grip the steel case back - you'll only bend the tips! Use the Case Opener."
+                            .to_string(),
+                    );
+                }
+                (WatchState::ClosedCase, _) => {
+                    self.log_messages.push(
+                        "This tool cannot be used on a sealed case back.".to_string(),
+                    );
+                }
+
+                // Step 2: Extracting the movement
+                (WatchState::OpenCase, Tool::Tweezers) => {
+                    self.watch_state = WatchState::MovementExtracted;
+                    self.log_messages.push(
+                        "SUCCESS: Carefully gripped the spacer ring with tweezers and transferred the movement to the pad."
+                            .to_string(),
+                    );
+                }
+                (WatchState::OpenCase, Tool::CaseOpener) => {
+                    self.log_messages.push(
+                        "The case back is already removed. The case opener is no longer needed here."
+                            .to_string(),
+                    );
+                }
+                (WatchState::OpenCase, _) => {
+                    self.log_messages.push(
+                        "Handling the bare movement requires precision Tweezers.".to_string(),
+                    );
+                }
+
+                // Step 3: Inspecting extracted movement
+                (WatchState::MovementExtracted, Tool::Loupe) => {
+                    self.log_messages.push(
+                        "INSPECT: Under 10x magnification, the hour, minute, and second hands are firmly set on the pinion."
+                            .to_string(),
+                    );
+                }
+
+                (WatchState::MovementExtracted, Tool::Tweezers) => {
+                    self.watch_state = WatchState::HandsRemoved;
+                    self.log_messages.push(
+                        "SUCCESS: With steady hands and fine tweezers, you lifted all three hands off the central pinion."
+                            .to_string(),
+                    );
+                }
+
+                // Default fallback
+                _ => {
+                    self.log_messages.push(format!(
+                        "Tool '{}' has no effect at this stage of disassembly.",
+                        tool.name()
+                    ));
+                }
+            }
         }
     }
 

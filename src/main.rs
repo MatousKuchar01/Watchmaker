@@ -1,6 +1,7 @@
 mod app;
 mod ui;
 mod event;
+mod ascii;
 
 use crossterm::{
     event::KeyEventKind,
