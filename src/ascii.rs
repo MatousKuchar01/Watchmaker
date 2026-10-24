@@ -25,6 +25,8 @@ impl WatchAscii {
 pub mod models {
     use super::*;
 
+    pub const LOGO: &'static str = include_str!("../ascii/logos/logo.txt");
+
     /*pub const SEAWARRIOR_300: WatchAscii = WatchAscii {
         case_back: include_str!("../ascii/watches/seawarrior_300/case_back.txt"),
         movement_cased: include_str!("../ascii/watches/seawarrior_300/movement_cased.txt"),

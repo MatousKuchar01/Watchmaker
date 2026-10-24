@@ -5,10 +5,19 @@ use ratatui::{
     Frame
 };
 use ratatui::layout::Constraint::Percentage;
-use crate::app::App;
+use crate::app::{App, Screen};
+use crate::ascii::models::LOGO;
 
 /// Main rendering function
 pub fn render(frame: &mut Frame, app: &mut App) {
+    match app.screen {
+        Screen::MainMenu => render_main_menu(frame, app),
+        Screen::Workbench => render_workbench(frame, app),
+    }
+}
+
+/// Rendering function for workbench
+pub fn render_workbench(frame: &mut Frame, app: &mut App) {
     // Separation of view ->> main frame vs log
     let main_chunks = Layout::default()
         .direction(Direction::Vertical)
@@ -73,4 +82,62 @@ pub fn render(frame: &mut Frame, app: &mut App) {
     ;
 
     frame.render_widget(log_box, main_chunks[1]);
+}
+
+pub fn render_main_menu(frame: &mut Frame, app: &mut App) {
+    // Vertical split into sections
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Percentage(20), // Odsazení shora
+            Constraint::Length(8), // Height of logo
+            Constraint::Length(6), // Height of menu
+            Constraint::Min(2), // Footer with hint
+        ])
+        .split(frame.area());
+
+    // ASCII logo of the game
+    let logo = Paragraph::new(LOGO)
+        .alignment(Alignment::Center)
+        .style(
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        );
+    frame.render_widget(logo, chunks[1]);
+
+    // Options in menu
+    let options: Vec<ListItem> = app
+        .menu_options
+        .iter()
+        .map(|item| ListItem::new(format!("  {}  ", item.label())))
+        .collect();
+
+    let menu_list = List::new(options)
+        .block(Block::default().borders(Borders::NONE))
+        .highlight_style(
+            Style::default()
+                .fg(Color::Black)
+                .bg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        )
+        .highlight_symbol("▶ ");
+
+    // Horizontal align of menu (30 % uprostřed)
+    let menu_area = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Percentage(35),
+            Constraint::Percentage(30),
+            Constraint::Percentage(35),
+        ])
+        .split(chunks[2])[1];
+
+    frame.render_stateful_widget(menu_list, menu_area, &mut app.menu_state);
+
+    // Hint for player
+    let footer = Paragraph::new("Press [UP/DOWN] to navigate • [ENTER] to select • [Q] to quit")
+        .alignment(Alignment::Center)
+        .style(Style::default().fg(Color::DarkGray));
+    frame.render_widget(footer, chunks[3]);
 }

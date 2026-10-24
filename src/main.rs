@@ -16,7 +16,7 @@ use event::{Event, EventHandler};
 use ratatui::prelude::*;
 use std::io::{self, stdout};
 use crossterm::event::KeyCode;
-use app::App;
+use app::{App, Screen};
 
 /// Main game runner
 fn main() -> io::Result<()> {
@@ -37,20 +37,40 @@ fn main() -> io::Result<()> {
 
         // 2. ->> Event control
         match EventHandler::next()? {
-            Event::Key(key) if key.kind == KeyEventKind::Press => match key.code {
-                KeyCode::Char('q') | KeyCode::Esc => {
-                    app.quit();
+            Event::Key(key) if key.kind == KeyEventKind::Press => {
+                match app.screen {
+                    // Navigation in main menu
+                    Screen::MainMenu => match key.code {
+                        KeyCode::Char('q') | KeyCode::Esc => {
+                            app.quit();
+                        }
+                        KeyCode::Down | KeyCode::Char('j') => {
+                            app.menu_next();
+                        }
+                        KeyCode::Up | KeyCode::Char('k') => {
+                            app.menu_previous();
+                        }
+                        KeyCode::Enter | KeyCode::Char(' ') => {
+                            app.menu_select();
+                        }
+                        _ => {}
+                    },
+                    Screen::Workbench => match key.code {
+                        KeyCode::Char('q') | KeyCode::Esc => {
+                            app.quit();
+                        }
+                        KeyCode::Down | KeyCode::Char('j') => {
+                            app.select_next_tool();
+                        }
+                        KeyCode::Up | KeyCode::Char('k') => {
+                            app.select_previous_tool();
+                        }
+                        KeyCode::Enter => {
+                            app.use_selected_tool();
+                        }
+                        _ => {}
+                    },
                 }
-                KeyCode::Down | KeyCode::Char('j') => {
-                    app.select_next_tool();
-                }
-                KeyCode::Up | KeyCode::Char('k') => {
-                    app.select_previous_tool();
-                }
-                KeyCode::Enter => {
-                    app.use_selected_tool();
-                }
-                _ => {}
             },
             _ => {}
         }

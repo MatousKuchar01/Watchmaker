@@ -1,4 +1,6 @@
 use ratatui::widgets::ListState;
+use crate::app::MainMenuOption::{Quit, StartWorkbench};
+use crate::app::Screen::MainMenu;
 use crate::ascii::{models, WatchAscii};
 
 /// Available tools in workshop
@@ -43,10 +45,40 @@ impl WatchState {
     }
 }
 
+/// Enum for game screens
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Screen {
+    MainMenu,
+    Workbench,
+}
+
+/// Choices in main menu
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MainMenuOption {
+    StartWorkbench,
+    Quit,
+}
+
+impl MainMenuOption {
+    /// Label for menu option
+    pub fn label(&self) -> &'static str {
+        match self {
+            StartWorkbench => "Enter Workshop",
+            Quit => "Quit Application",
+        }
+    }
+}
+
 /// Main struct that hold state of the whole app
 pub struct App {
     /// Should app quit?
     pub should_quit: bool,
+    /// Current screen
+    pub screen: Screen,
+    /// Options in the menu
+    pub menu_options: Vec<MainMenuOption>,
+    /// State of selection in menu
+    pub menu_state: ListState,
     /// List of all tools player can use
     pub tools: Vec<Tool>,
     /// State of selection in TUI list
@@ -65,8 +97,17 @@ impl App {
         let mut tools_state = ListState::default();
         tools_state.select(Some(0)); // on startup pick first tool in vec
 
+        let mut menu_state = ListState::default();
+        menu_state.select(Some(0));
+
         Self {
             should_quit: false,
+            screen: MainMenu,
+            menu_options: vec![
+                StartWorkbench,
+                Quit
+            ],
+            menu_state,
             tools: vec![
                 Tool::Tweezers,
                 Tool::CaseOpener,
@@ -172,6 +213,35 @@ impl App {
                         "Tool '{}' has no effect at this stage of disassembly.",
                         tool.name()
                     ));
+                }
+            }
+        }
+    }
+
+    /// Moves selection in menu
+    pub fn menu_next(&mut self) {
+        if let Some(i) = self.menu_state.selected() {
+            let next = (i + 1) % self.menu_options.len();
+            self.menu_state.select(Some(next));
+        }
+    }
+
+    /// Moves selection in menu
+    pub fn menu_previous(&mut self) {
+        if let Some(i) = self.menu_state.selected() {
+            let prev = if i == 0 { self.menu_options.len() - 1 } else { i - 1 };
+            self.menu_state.select(Some(prev));
+        }
+    }
+
+    pub fn menu_select(&mut self) {
+        if let Some(i) = self.menu_state.selected() {
+            match self.menu_options[i] {
+                StartWorkbench => {
+                    self.screen = Screen::Workbench; // to the game
+                }
+                Quit => {
+                    self.should_quit = true;
                 }
             }
         }
