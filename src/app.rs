@@ -1,7 +1,10 @@
 use ratatui::widgets::ListState;
-use crate::app::MainMenuOption::{Quit, StartWorkbench, WatchCatalog};
+use crate::app::MainMenuOption::{
+    Quit, StartWorkbench, WatchCatalog, Parts
+};
 use crate::app::Screen::MainMenu;
 use crate::ascii::{models, WatchAscii};
+use crate::parts::{parts, Part};
 
 /// Available tools in workshop
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -51,6 +54,7 @@ pub enum Screen {
     MainMenu,
     Workbench,
     Catalog,
+    Parts
 }
 
 /// Choices in main menu
@@ -58,6 +62,7 @@ pub enum Screen {
 pub enum MainMenuOption {
     StartWorkbench,
     WatchCatalog,
+    Parts,
     Quit,
 }
 
@@ -66,7 +71,8 @@ impl MainMenuOption {
     pub fn label(&self) -> &'static str {
         match self {
             StartWorkbench => "Enter Workshop",
-            WatchCatalog => "Enter Catalog",
+            WatchCatalog => "Watch Catalog",
+            Parts => "Parts glossary",
             Quit => "Quit Application",
         }
     }
@@ -86,6 +92,10 @@ pub struct App {
     pub catalog_models: &'static[&'static WatchAscii],
     /// State of selection in catalog
     pub catalog_state: ListState,
+    /// Parts glossary
+    pub part_models: &'static[&'static Part],
+    /// State of selection in parts glossary
+    pub part_state: ListState,
     /// List of all tools player can use
     pub tools: Vec<Tool>,
     /// State of selection in TUI list
@@ -110,17 +120,23 @@ impl App {
         let mut catalog_state = ListState::default();
         catalog_state.select(Some(0));
 
+        let mut part_state = ListState::default();
+        part_state.select(Some(0));
+
         Self {
             should_quit: false,
             screen: MainMenu,
             menu_options: vec![
                 StartWorkbench,
                 WatchCatalog,
+                Parts,
                 Quit
             ],
             menu_state,
             catalog_models: models::ALL_MODELS,
             catalog_state,
+            part_models: parts::ALL_PARTS,
+            part_state,
             tools: vec![
                 Tool::Tweezers,
                 Tool::CaseOpener,
@@ -253,8 +269,11 @@ impl App {
                 StartWorkbench => {
                     self.screen = Screen::Workbench; // to the game
                 }
-                MainMenuOption::WatchCatalog => {
+                WatchCatalog => {
                     self.screen = Screen::Catalog;
+                }
+                Parts => {
+                    self.screen = Screen::Parts;
                 }
                 Quit => {
                     self.should_quit = true;
@@ -276,6 +295,22 @@ impl App {
         if let Some(i) = self.catalog_state.selected() {
             let prev = if i == 0 { self.catalog_models.len() - 1 } else { i - 1 };
             self.catalog_state.select(Some(prev));
+        }
+    }
+
+    /// Moves selection in Glossary
+    pub fn parts_next(&mut self) {
+        if let Some(i) = self.part_state.selected() {
+            let next = (i + 1) % self.part_models.len();
+            self.part_state.select(Some(next));
+        }
+    }
+
+    /// Moves selection in Glossary
+    pub fn parts_previous(&mut self) {
+        if let Some(i) = self.part_state.selected() {
+            let prev = if i == 0 { self.part_models.len() - 1 } else { i - 1 };
+            self.part_state.select(Some(prev));
         }
     }
 

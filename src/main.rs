@@ -2,6 +2,7 @@ mod app;
 mod ui;
 mod event;
 mod ascii;
+mod parts;
 
 use crossterm::{
     event::KeyEventKind,
@@ -82,6 +83,18 @@ fn main() -> io::Result<()> {
                         },
                         KeyCode::Enter | KeyCode::Char(' ') => {
                             app.catalog_select_current()
+                        },
+                        _ => {}
+                    },
+                    Screen::Parts => match key.code {
+                        KeyCode::Esc | KeyCode::Char('q') => {
+                            app.screen = Screen::MainMenu
+                        },
+                        KeyCode::Down | KeyCode::Char('j') => {
+                            app.parts_next()
+                        },
+                        KeyCode::Up | KeyCode::Char('k') => {
+                            app.parts_previous()
                         },
                         _ => {}
                     },

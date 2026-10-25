@@ -14,6 +14,7 @@ pub fn render(frame: &mut Frame, app: &mut App) {
         Screen::MainMenu => render_main_menu(frame, app),
         Screen::Workbench => render_workbench(frame, app),
         Screen::Catalog => render_catalog_menu(frame, app),
+        Screen::Parts => render_parts_menu(frame, app),
     }
 }
 
@@ -228,4 +229,83 @@ pub fn render_catalog_menu(frame: &mut Frame, app: &mut App) {
     ;
 
     frame.render_widget(footer, chunks[1]);
+}
+
+/// Renders parts glossary
+pub fn render_parts_menu(frame: &mut Frame, app: &mut App) {
+    let main_layout = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Min(10), Constraint::Length(3)])
+        .split(frame.area())
+    ;
+
+    let cols = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(35), Constraint::Percentage(65)])
+        .split(main_layout[0])
+    ;
+
+    // List of parts on the left
+    let items: Vec<ListItem> = app
+        .part_models
+        .iter()
+        .map(|part| ListItem::new(format!("• {}", part.name)))
+        .collect()
+    ;
+
+    let parts_list_widget = List::new(items)
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title(" Components Index "),
+        )
+        .highlight_style(
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        )
+        .highlight_symbol(">> ")
+    ;
+
+    frame.render_stateful_widget(parts_list_widget, cols[0], &mut app.part_state);
+
+    // Technical detail
+    let selected_index = app.part_state.selected().unwrap_or(0);
+    let part = app.part_models[selected_index];
+
+    let detail_text = format!(
+        "=== {} ===\n\
+        Category: {}\n\n\
+        [FUNCTION & PURPOSE]\n\
+        {}\n\n\
+        [COMMON FAILURE MODES]\n\
+        {}\n\n\
+        [HOROLOGIST'S NOTE]\n\
+        {}",
+        part.name,
+        part.category,
+        part.function,
+        part.failure_mode,
+        part.lore_fact
+    );
+
+    let detail_widget = Paragraph::new(detail_text)
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title(" Technical Specification "),
+        )
+        .style(Style::default().fg(Color::White))
+        .wrap(ratatui::widgets::Wrap { trim: true })
+    ;
+
+    frame.render_widget(detail_widget, cols[1]);
+
+    // Footer hint
+    let footer = Paragraph::new("▲/▼ Navigate Parts • [ESC] Return to Main Menu")
+        .alignment(Alignment::Center)
+        .style(Style::default().fg(Color::DarkGray))
+    ;
+
+    frame.render_widget(footer, main_layout[1]);
 }
