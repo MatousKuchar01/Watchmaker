@@ -188,7 +188,9 @@ pub fn render_catalog_menu(frame: &mut Frame, app: &mut App) {
     // Full watch image
     let watch_image = Paragraph::new(watch.full_watch)
         .block(Block::default().borders(Borders::ALL).title(" Visual Blueprint "))
-        .alignment(Alignment::Center);
+        .alignment(Alignment::Center)
+    ;
+
     frame.render_widget(watch_image, cols[1]);
 
     // Logo, specification, lore
