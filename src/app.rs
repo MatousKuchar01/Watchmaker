@@ -1,5 +1,5 @@
 use ratatui::widgets::ListState;
-use crate::app::MainMenuOption::{Quit, StartWorkbench};
+use crate::app::MainMenuOption::{Quit, StartWorkbench, WatchCatalog};
 use crate::app::Screen::MainMenu;
 use crate::ascii::{models, WatchAscii};
 
@@ -50,12 +50,14 @@ impl WatchState {
 pub enum Screen {
     MainMenu,
     Workbench,
+    Catalog,
 }
 
 /// Choices in main menu
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MainMenuOption {
     StartWorkbench,
+    WatchCatalog,
     Quit,
 }
 
@@ -64,6 +66,7 @@ impl MainMenuOption {
     pub fn label(&self) -> &'static str {
         match self {
             StartWorkbench => "Enter Workshop",
+            WatchCatalog => "Enter Catalog",
             Quit => "Quit Application",
         }
     }
@@ -79,6 +82,10 @@ pub struct App {
     pub menu_options: Vec<MainMenuOption>,
     /// State of selection in menu
     pub menu_state: ListState,
+    /// Catalog models
+    pub catalog_models: &'static[&'static WatchAscii],
+    /// State of selection in catalog
+    pub catalog_state: ListState,
     /// List of all tools player can use
     pub tools: Vec<Tool>,
     /// State of selection in TUI list
@@ -100,14 +107,20 @@ impl App {
         let mut menu_state = ListState::default();
         menu_state.select(Some(0));
 
+        let mut catalog_state = ListState::default();
+        catalog_state.select(Some(0));
+
         Self {
             should_quit: false,
             screen: MainMenu,
             menu_options: vec![
                 StartWorkbench,
+                WatchCatalog,
                 Quit
             ],
             menu_state,
+            catalog_models: models::ALL_MODELS,
+            catalog_state,
             tools: vec![
                 Tool::Tweezers,
                 Tool::CaseOpener,
@@ -240,10 +253,39 @@ impl App {
                 StartWorkbench => {
                     self.screen = Screen::Workbench; // to the game
                 }
+                MainMenuOption::WatchCatalog => {
+                    self.screen = Screen::Catalog;
+                }
                 Quit => {
                     self.should_quit = true;
                 }
             }
+        }
+    }
+
+    /// Moves selection in catalog
+    pub fn catalog_next(&mut self) {
+        if let Some(i) = self.catalog_state.selected() {
+            let next = (i + 1) % self.catalog_models.len();
+            self.catalog_state.select(Some(next));
+        }
+    }
+
+    /// Moves selection in catalog
+    pub fn catalog_previous(&mut self) {
+        if let Some(i) = self.catalog_state.selected() {
+            let prev = if i == 0 { self.catalog_models.len() - 1 } else { i - 1 };
+            self.catalog_state.select(Some(prev));
+        }
+    }
+
+    /// Selects currently viewed watch as active for workshop model and jumps into Workbench!
+    pub fn catalog_select_current(&mut self) {
+        if let Some(i) = self.catalog_state.selected() {
+            self.current_watch = self.catalog_models[i];
+            self.watch_state = WatchState::ClosedCase;
+            self.log_messages.push(format!("Now working on: {}", self.current_watch.name));
+            self.screen = Screen::Workbench;
         }
     }
 

@@ -13,6 +13,7 @@ pub fn render(frame: &mut Frame, app: &mut App) {
     match app.screen {
         Screen::MainMenu => render_main_menu(frame, app),
         Screen::Workbench => render_workbench(frame, app),
+        Screen::Catalog => render_catalog_menu(frame, app),
     }
 }
 
@@ -140,4 +141,89 @@ pub fn render_main_menu(frame: &mut Frame, app: &mut App) {
         .alignment(Alignment::Center)
         .style(Style::default().fg(Color::DarkGray));
     frame.render_widget(footer, chunks[3]);
+}
+
+pub fn render_catalog_menu(frame: &mut Frame, app: &mut App) {
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Min(10), Constraint::Length(3)])
+        .split(frame.area())
+    ;
+
+    // List of models (25 %), Image (35 %), Lore (40 %)
+    let cols = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Percentage(25),
+            Constraint::Percentage(35),
+            Constraint::Percentage(40),
+        ])
+        .split(chunks[0])
+    ;
+
+    // List of models
+    let model_items: Vec<ListItem> = app
+        .catalog_models
+        .iter()
+        .map(|w| ListItem::new(format!("{} - {}", w.brand, w.name)))
+        .collect()
+    ;
+
+    let model_list = List::new(model_items)
+        .block(Block::default().borders(Borders::ALL).title(" Models archive "))
+        .highlight_style(
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        )
+        .highlight_symbol(">> ")
+    ;
+
+    frame.render_stateful_widget(model_list, cols[0], &mut app.catalog_state);
+
+    // Currently selected model for detail
+    let selected_index = app.catalog_state.selected().unwrap_or(0);
+    let watch = app.catalog_models[selected_index];
+
+    // Full watch image
+    let watch_image = Paragraph::new(watch.full_watch)
+        .block(Block::default().borders(Borders::ALL).title(" Visual Blueprint "))
+        .alignment(Alignment::Center);
+    frame.render_widget(watch_image, cols[1]);
+
+    // Logo, specification, lore
+    let info_text = format!(
+        "--- {} ---\n\
+        \"{}\"\n\n\
+        • Model: {}\n\
+        • Movement: {}\n\
+        • Water Resistance: {}\n\
+        • Construction: {}\n\n\
+        [LORE & DOSSIER]:\n\
+        {}",
+        watch.brand,
+        watch.tagline,
+        watch.name,
+        watch.movement_spec,
+        watch.water_resistance,
+        watch.case_material,
+        watch.lore_description
+    );
+
+    let details = Paragraph::new(info_text)
+        .block(Block::default().borders(Borders::ALL).title(" Horological Dossier "))
+        .style(Style::default().fg(Color::White))
+        .wrap(ratatui::widgets::Wrap { trim: true })
+    ;
+
+    frame.render_widget(details, cols[2]);
+
+    // Footer hint
+    let footer = Paragraph::new(
+        "▲/▼ Navigate Models • [ENTER] Take to Workbench • [ESC] Return to Menu", )
+        .alignment(Alignment::Center)
+        .style(Style::default().fg(Color::DarkGray))
+    ;
+
+    frame.render_widget(footer, chunks[1]);
 }

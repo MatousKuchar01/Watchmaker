@@ -70,6 +70,21 @@ fn main() -> io::Result<()> {
                         }
                         _ => {}
                     },
+                    Screen::Catalog => match key.code {
+                        KeyCode::Esc | KeyCode::Char('q') => {
+                            app.screen = Screen::MainMenu
+                        },
+                        KeyCode::Down | KeyCode::Char('j') => {
+                            app.catalog_next()
+                        },
+                        KeyCode::Up | KeyCode::Char('k') => {
+                            app.catalog_previous()
+                        },
+                        KeyCode::Enter | KeyCode::Char(' ') => {
+                            app.catalog_select_current()
+                        },
+                        _ => {}
+                    },
                 }
             },
             _ => {}
